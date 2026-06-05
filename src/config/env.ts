@@ -19,10 +19,14 @@ const envSchema = z.object({
   TELNYX_PHONE_NUMBER: optionalString,
   TELNYX_VERIFY_SIGNATURE: envBoolean.default(false),
   DRY_RUN_TELNYX_COMMANDS: envBoolean.default(false),
+  CAPTURE_MEDIA_METADATA: envBoolean.default(false),
+  MEDIA_METADATA_SAMPLE_LIMIT: z.coerce.number().int().nonnegative().default(20),
   TELNYX_STREAM_TRACK: z.string().trim().min(1).default("inbound_track"),
   TELNYX_STREAM_CODEC: z.string().trim().min(1).default("PCMU"),
+  AZURE_STT_ENABLED: envBoolean.default(false),
   AZURE_SPEECH_KEY: optionalString,
-  AZURE_SPEECH_REGION: optionalString
+  AZURE_SPEECH_REGION: optionalString,
+  AZURE_STT_LANGUAGE: z.string().trim().min(1).default("es-ES")
 });
 
 const parsed = envSchema.safeParse(process.env);

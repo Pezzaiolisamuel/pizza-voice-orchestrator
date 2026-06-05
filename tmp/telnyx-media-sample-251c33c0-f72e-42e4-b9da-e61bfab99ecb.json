@@ -1,0 +1,182 @@
+[
+  {
+    "timestamp": "2859881760",
+    "event": "media",
+    "sequenceNumber": "2",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "1",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859882240",
+    "event": "media",
+    "sequenceNumber": "3",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "2",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859882400",
+    "event": "media",
+    "sequenceNumber": "4",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "3",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859882560",
+    "event": "media",
+    "sequenceNumber": "5",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "4",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859882720",
+    "event": "media",
+    "sequenceNumber": "6",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "5",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859882880",
+    "event": "media",
+    "sequenceNumber": "7",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "6",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859883040",
+    "event": "media",
+    "sequenceNumber": "8",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "7",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859883200",
+    "event": "media",
+    "sequenceNumber": "9",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "8",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859883360",
+    "event": "media",
+    "sequenceNumber": "10",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "9",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859883520",
+    "event": "media",
+    "sequenceNumber": "11",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "10",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859883680",
+    "event": "media",
+    "sequenceNumber": "12",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "11",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859883840",
+    "event": "media",
+    "sequenceNumber": "13",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "12",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884000",
+    "event": "media",
+    "sequenceNumber": "14",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "13",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884160",
+    "event": "media",
+    "sequenceNumber": "15",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "14",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884320",
+    "event": "media",
+    "sequenceNumber": "16",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "15",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884480",
+    "event": "media",
+    "sequenceNumber": "17",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "16",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884640",
+    "event": "media",
+    "sequenceNumber": "18",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "17",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884800",
+    "event": "media",
+    "sequenceNumber": "19",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "18",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859884960",
+    "event": "media",
+    "sequenceNumber": "20",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "19",
+    "payloadSize": 216,
+    "track": "inbound"
+  },
+  {
+    "timestamp": "2859885120",
+    "event": "media",
+    "sequenceNumber": "21",
+    "streamId": "251c33c0-f72e-42e4-b9da-e61bfab99ecb",
+    "chunk": "20",
+    "payloadSize": 216,
+    "track": "inbound"
+  }
+]
