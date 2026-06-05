@@ -2,6 +2,10 @@ node_modules
 dist
 .env
 .env.*
+tmp/
+tmp/call-summaries/
+*.log
+
 !.env.example
 .DS_Store
 logs

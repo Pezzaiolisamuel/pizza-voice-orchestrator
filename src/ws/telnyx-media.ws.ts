@@ -4,6 +4,17 @@ import path from "node:path";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { RawData } from "ws";
 
+import {
+  addSafeError,
+  attachStreamId,
+  CallState,
+  getSessionByCallControlId,
+  getSessionByCallSessionId,
+  incrementMediaStats,
+  transitionCallState,
+  type CallSession,
+  type SafeCallError
+} from "../calls/callSessionStore.js";
 import { env } from "../config/env.js";
 import {
   createAzureSttSession,
@@ -11,12 +22,16 @@ import {
 } from "../services/azure-stt.service.js";
 
 type TelnyxMediaMessage = {
+  callControlId?: unknown;
+  call_control_id?: unknown;
   callSessionId?: unknown;
   call_session_id?: unknown;
   event?: unknown;
   sequenceNumber?: unknown;
   sequence_number?: unknown;
   start?: {
+    callControlId?: unknown;
+    call_control_id?: unknown;
     callSessionId?: unknown;
     call_session_id?: unknown;
     streamId?: unknown;
@@ -55,6 +70,7 @@ const mediaMetadataDir = path.resolve(process.cwd(), "tmp");
 export async function telnyxMediaWs(app: FastifyInstance) {
   app.get("/telnyx/media", { websocket: true }, (connection, request) => {
       let azureSttSession: AzureSttSession | null = null;
+      let activeCallSessionId: string | null = null;
       const metadataSamples = new Map<string, MediaMetadataCapture>();
       const counters = {
         connectedFrames: 0,
@@ -92,20 +108,47 @@ export async function telnyxMediaWs(app: FastifyInstance) {
             asString(parsed.callSessionId) ??
             asString(parsed.start?.call_session_id) ??
             asString(parsed.start?.callSessionId);
+          const callControlId =
+            asString(parsed.call_control_id) ??
+            asString(parsed.callControlId) ??
+            asString(parsed.start?.call_control_id) ??
+            asString(parsed.start?.callControlId);
+          const callControlSession = callControlId
+            ? getSessionByCallControlId(callControlId)
+            : null;
+          activeCallSessionId =
+            callSessionId ?? callControlSession?.callSessionId ?? activeCallSessionId;
 
           if (event === "connected") {
             counters.connectedFrames += 1;
           } else if (event === "start") {
             counters.startFrames += 1;
+            const startSession = updateSessionForMediaStart({
+              callSessionId: activeCallSessionId,
+              streamId,
+              azureSttSession
+            });
+
+            if (startSession) {
+              request.log.info(
+                {
+                  requestId: request.id,
+                  streamId,
+                  session: summarizeSessionForLog(startSession)
+                },
+                "updated call session from Telnyx media start event"
+              );
+            }
+
             if (env.AZURE_STT_ENABLED && !azureSttSession) {
-              const sttSessionId = streamId ?? callSessionId ?? request.id;
+              const sttSessionId = activeCallSessionId ?? streamId ?? request.id;
               try {
                 azureSttSession = createAzureSttSession(sttSessionId);
                 request.log.info(
                   {
                     requestId: request.id,
                     streamId,
-                    callSessionId,
+                    callSessionId: activeCallSessionId,
                     sttSessionId
                   },
                   "created Azure STT session for Telnyx media stream"
@@ -116,34 +159,70 @@ export async function telnyxMediaWs(app: FastifyInstance) {
                     error,
                     requestId: request.id,
                     streamId,
-                    callSessionId
+                    callSessionId: activeCallSessionId
                   },
                   "failed to create Azure STT session for Telnyx media stream"
+                );
+                addSafeMediaWebSocketError(
+                  activeCallSessionId,
+                  withOptionalCode(
+                    "Failed to create Azure STT session",
+                    getErrorCode(error)
+                  )
                 );
               }
             }
           } else if (event === "stop") {
             counters.stopFrames += 1;
+            const stoppedSession = activeCallSessionId
+              ? transitionCallState(
+                  activeCallSessionId,
+                  CallState.STREAMING_STOPPED
+                )
+              : null;
+
+            if (stoppedSession) {
+              request.log.info(
+                {
+                  requestId: request.id,
+                  streamId,
+                  session: summarizeSessionForLog(stoppedSession)
+                },
+                "updated call session from Telnyx media stop event"
+              );
+            }
+
             void closeAzureSttSession({
               request,
               session: azureSttSession,
               reason: "Telnyx media stop event",
               streamId,
-              callSessionId
+              callSessionId: activeCallSessionId
             });
             azureSttSession = null;
           } else if (event === "error") {
             counters.errorFrames += 1;
+            addSafeMediaWebSocketError(activeCallSessionId, {
+              message: "Telnyx media websocket error event"
+            });
           }
 
           if (event === "media") {
             const payload = asString(parsed.media?.payload);
             const payloadSize = payload?.length ?? 0;
+            const audioBuffer = payload ? Buffer.from(payload, "base64") : null;
+            const mediaBytes = audioBuffer?.byteLength ?? 0;
             counters.mediaFrames += 1;
-            counters.totalMediaBytes += payloadSize;
+            counters.totalMediaBytes += mediaBytes;
 
-            if (azureSttSession && payload) {
-              const audioBuffer = Buffer.from(payload, "base64");
+            if (activeCallSessionId) {
+              incrementMediaStats(activeCallSessionId, mediaBytes);
+            }
+
+            if (azureSttSession && audioBuffer) {
+              if (activeCallSessionId) {
+                transitionCallState(activeCallSessionId, CallState.TRANSCRIBING);
+              }
               azureSttSession.pushAudio(audioBuffer);
             }
 
@@ -179,6 +258,7 @@ export async function telnyxMediaWs(app: FastifyInstance) {
                   sequenceNumber,
                   streamId,
                   payloadSize,
+                  mediaBytes,
                   ...counters
                 },
                 "received Telnyx media websocket progress"
@@ -209,10 +289,18 @@ export async function telnyxMediaWs(app: FastifyInstance) {
       });
 
       connection.on("close", (code: number, reasonBuffer: Buffer) => {
+        if (shouldRecordWebSocketCloseError(code, counters.stopFrames)) {
+          addSafeMediaWebSocketError(activeCallSessionId, {
+            message: "Telnyx media websocket closed before Telnyx media stop",
+            code: String(code)
+          });
+        }
+
         void closeAzureSttSession({
           request,
           session: azureSttSession,
-          reason: "Telnyx media websocket close"
+          reason: "Telnyx media websocket close",
+          callSessionId: activeCallSessionId
         });
         azureSttSession = null;
 
@@ -238,6 +326,11 @@ export async function telnyxMediaWs(app: FastifyInstance) {
             code,
             reason: reasonBuffer.toString(),
             requestId: request.id,
+            callSessionId: activeCallSessionId,
+            closeWasExpected: !shouldRecordWebSocketCloseError(
+              code,
+              counters.stopFrames
+            ),
             ...counters
           },
           "Telnyx media websocket disconnected"
@@ -245,10 +338,19 @@ export async function telnyxMediaWs(app: FastifyInstance) {
       });
 
       connection.on("error", (error: Error) => {
+        addSafeMediaWebSocketError(
+          activeCallSessionId,
+          withOptionalCode(error.message, getErrorCode(error))
+        );
+
         request.log.error(
           {
-            error,
-            requestId: request.id
+            error: {
+              message: error.message,
+              name: error.name
+            },
+            requestId: request.id,
+            callSessionId: activeCallSessionId
           },
           "Telnyx media websocket error"
         );
@@ -404,4 +506,107 @@ async function closeAzureSttSession({
       "failed to close Azure STT session for Telnyx media stream"
     );
   }
+}
+
+function updateSessionForMediaStart({
+  callSessionId,
+  streamId,
+  azureSttSession
+}: {
+  callSessionId: string | null;
+  streamId: string | null;
+  azureSttSession: AzureSttSession | null;
+}) {
+  if (!callSessionId) {
+    return null;
+  }
+
+  if (streamId) {
+    attachStreamId(callSessionId, streamId);
+  }
+
+  const currentSession = getSessionByCallSessionId(callSessionId);
+
+  if (currentSession?.state === CallState.TRANSCRIBING) {
+    return currentSession;
+  }
+
+  return transitionCallState(
+    callSessionId,
+    azureSttSession ? CallState.TRANSCRIBING : CallState.STREAMING_STARTED
+  );
+}
+
+function addSafeMediaWebSocketError(
+  callSessionId: string | null,
+  input: {
+    message: string;
+    code?: string;
+  }
+) {
+  if (!callSessionId) {
+    return null;
+  }
+
+  const safeError: SafeCallError = {
+    timestamp: new Date().toISOString(),
+    source: "telnyx_media_websocket",
+    message: input.message
+  };
+
+  if (input.code) {
+    safeError.code = input.code;
+  }
+
+  return addSafeError(callSessionId, safeError);
+}
+
+function withOptionalCode(message: string, code: string | undefined) {
+  return code ? { message, code } : { message };
+}
+
+function summarizeSessionForLog(session: CallSession | null) {
+  if (!session) {
+    return null;
+  }
+
+  return {
+    callSessionId: session.callSessionId,
+    callControlId: session.callControlId,
+    state: session.state,
+    mediaFrames: session.mediaFrames,
+    totalMediaBytes: session.totalMediaBytes,
+    transcriptCount: session.finalTranscripts.length
+  };
+}
+
+function getErrorCode(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  const code = (error as { code?: unknown; statusCode?: unknown }).code;
+  const statusCode = (error as { code?: unknown; statusCode?: unknown }).statusCode;
+
+  if (typeof code === "string") {
+    return code;
+  }
+
+  if (typeof statusCode === "number" || typeof statusCode === "string") {
+    return String(statusCode);
+  }
+
+  return undefined;
+}
+
+function shouldRecordWebSocketCloseError(code: number, stopFrames: number) {
+  if (stopFrames === 0) {
+    return true;
+  }
+
+  return isAbnormalWebSocketCloseCode(code);
+}
+
+function isAbnormalWebSocketCloseCode(code: number) {
+  return ![1000, 1001, 1005].includes(code);
 }

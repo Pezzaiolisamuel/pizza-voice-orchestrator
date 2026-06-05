@@ -127,3 +127,20 @@ export function getDirection(payload: TelnyxWebhookPayload) {
     null
   );
 }
+
+export function getStreamId(payload: TelnyxWebhookPayload) {
+  const { data, nestedPayload, topLevelPayload, topLevelDataPayload } =
+    getPayloadParts(payload);
+
+  return (
+    asString(topLevelDataPayload?.stream_id) ??
+    asString(topLevelDataPayload?.streamId) ??
+    asString(nestedPayload?.stream_id) ??
+    asString(nestedPayload?.streamId) ??
+    asString(data?.stream_id) ??
+    asString(data?.streamId) ??
+    asString(topLevelPayload?.stream_id) ??
+    asString(topLevelPayload?.streamId) ??
+    null
+  );
+}
