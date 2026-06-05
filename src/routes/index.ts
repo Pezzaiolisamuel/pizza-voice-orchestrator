@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 
-import { telnyxRoutes } from "./telnyx.js";
+import { telnyxWebhookRoute } from "./telnyx-webhook.route.js";
 
 export const registerRoutes: FastifyPluginAsync = async (app) => {
-  await app.register(telnyxRoutes);
+  await app.register(telnyxWebhookRoute);
 };

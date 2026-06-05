@@ -8,4 +8,8 @@ declare module "fastify" {
     sessionRegistry: CallSessionRegistry;
     orchestrator: TelnyxCallOrchestrator;
   }
+
+  interface FastifyRequest {
+    rawBody?: string;
+  }
 }

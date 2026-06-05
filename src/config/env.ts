@@ -18,6 +18,7 @@ const envSchema = z.object({
   TELNYX_CONNECTION_ID: optionalString,
   TELNYX_PHONE_NUMBER: optionalString,
   TELNYX_VERIFY_SIGNATURE: envBoolean.default(false),
+  DRY_RUN_TELNYX_COMMANDS: envBoolean.default(false),
   TELNYX_STREAM_TRACK: z.string().trim().min(1).default("inbound_track"),
   TELNYX_STREAM_CODEC: z.string().trim().min(1).default("PCMU"),
   AZURE_SPEECH_KEY: optionalString,
